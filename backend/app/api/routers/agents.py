@@ -77,4 +77,9 @@ async def poll_tasks(
         raise HTTPException(status_code=401, detail="Invalid agent credentials")
     
     tasks = await service.get_tasks(agent.id)
-    return {"tasks": tasks}
+    # Convert SQLAlchemy models to Pydantic models or dicts manually if needed, 
+    # but since response_model is dict, we can just return a list of dicts
+    # However, tasks is a list of Task objects.
+    # Let's use TaskResponse schema to serialize
+    from app.schemas.task import TaskResponse
+    return {"tasks": [TaskResponse.model_validate(t) for t in tasks]}

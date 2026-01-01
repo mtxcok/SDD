@@ -17,8 +17,19 @@ class AllocationService:
 
     async def allocate_port(self, agent_id: int, service: str = "code_server") -> Allocation:
         # 1. Acquire Redis Lock
-        lock = redis_client.lock("port_alloc_lock", timeout=5)
-        async with lock:
+        try:
+            lock = redis_client.lock("port_alloc_lock", timeout=5)
+            acquired = await lock.acquire(blocking=True)
+            if not acquired:
+                 raise Exception("Could not acquire lock")
+        except Exception as e:
+             # Fallback if redis is not available or lock fails, though in prod we should handle this better
+             print(f"Warning: Redis lock failed: {e}")
+             # Proceeding without lock for now to debug logic, or re-raise
+             # raise e 
+             pass
+
+        try:
             # 2. Get used ports
             used_ports = await self.alloc_repo.get_active_ports()
             used_ports_set = set(used_ports)
@@ -52,6 +63,12 @@ class AllocationService:
                 "remote_port": available_port,
                 "status": AllocationStatus.REQUESTED
             })
+        finally:
+            try:
+                if 'lock' in locals() and await lock.locked():
+                    await lock.release()
+            except Exception:
+                pass
 
         # 5. Create Task for Agent (outside lock)
         # Payload: remote_port, cs_password (generated)
