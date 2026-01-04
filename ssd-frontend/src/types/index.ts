@@ -27,6 +27,8 @@ export interface Agent {
   status: AgentStatus;
   last_seen_at: string | null;
   ip: string | null;
+  cpu?: number;
+  mem?: number;
   // Frontend specific property to hold allocations
   active_allocations?: Allocation[];
 }

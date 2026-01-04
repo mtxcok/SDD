@@ -36,10 +36,22 @@ export const useAgentsStore = defineStore('agents', () => {
     }
   };
 
+  const deleteAgent = async (id: number) => {
+    try {
+      await agentsApi.delete(id);
+      await fetchAgents();
+      return true;
+    } catch (error) {
+      console.error('Failed to delete agent', error);
+      return false;
+    }
+  };
+
   return {
     agents,
     loading,
     fetchAgents,
+    deleteAgent,
   };
 });
 

@@ -41,6 +41,8 @@ class Agent(AgentBase):
     status: AgentStatus
     last_seen_at: Optional[datetime]
     ip: Optional[str]
+    cpu: Optional[float] = None
+    mem: Optional[float] = None
     # active_allocations: List[Allocation] # Circular dependency, handle later if needed
 
     class Config:

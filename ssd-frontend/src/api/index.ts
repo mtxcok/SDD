@@ -68,6 +68,9 @@ export const agentsApi = {
   list: async () => {
     return api.get<Agent[]>('/agents/');
   },
+  delete: async (id: number) => {
+    return api.delete<{ ok: boolean }>(`/agents/${id}`);
+  },
 };
 
 export const allocationsApi = {
