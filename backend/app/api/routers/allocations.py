@@ -17,7 +17,7 @@ async def create_allocation(
 ):
     service = AllocationService(session)
     try:
-        allocation = await service.allocate_port(alloc_in.agent_id, alloc_in.service)
+        allocation = await service.allocate_port(alloc_in.agent_id, current_user.id, alloc_in.service)
         return allocation
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -40,6 +40,5 @@ async def get_allocations(
 ):
     from app.repositories.allocation import AllocationRepository
     repo = AllocationRepository(session)
-    if agent_id:
-        return await repo.get_by_agent(agent_id)
-    return await repo.get_all()
+    # Filter by current user!
+    return await repo.get_by_user(current_user.id, agent_id)

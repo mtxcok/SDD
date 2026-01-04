@@ -7,6 +7,7 @@ class Allocation(Base):
     __tablename__ = "allocations"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True) # TODO: Make nullable=False after migration
     agent_id = Column(Integer, ForeignKey("agents.id"), nullable=False)
     service = Column(String(100), nullable=False)
     remote_port = Column(Integer, unique=True, nullable=False)

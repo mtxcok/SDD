@@ -15,7 +15,7 @@ class AllocationService:
         self.task_repo = TaskRepository(session)
         self.audit_service = AuditService(session)
 
-    async def allocate_port(self, agent_id: int, service: str = "code_server") -> Allocation:
+    async def allocate_port(self, agent_id: int, user_id: int, service: str = "code_server") -> Allocation:
         # 1. Acquire Redis Lock
         try:
             lock = redis_client.lock("port_alloc_lock", timeout=5)
@@ -59,6 +59,7 @@ class AllocationService:
             # 4. Create Allocation
             allocation = await self.alloc_repo.create({
                 "agent_id": agent_id,
+                "user_id": user_id,
                 "service": service,
                 "remote_port": available_port,
                 "status": AllocationStatus.REQUESTED
