@@ -43,7 +43,11 @@ class AgentService:
             "last_seen_at": datetime.utcnow()
         })
         
-        return agent.id, agent_token
+        # Return composite token: "id:token"
+        # This allows the client to send "Bearer id:token" and the backend to parse the ID
+        composite_token = f"{agent.id}:{agent_token}"
+        
+        return agent.id, composite_token
 
     async def authenticate_agent(self, agent_id: int, agent_token: str) -> Agent | None:
         agent = await self.agent_repo.get(agent_id)

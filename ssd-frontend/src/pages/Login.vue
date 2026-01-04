@@ -3,28 +3,28 @@
     <div class="login-wrapper">
       <div class="login-left">
         <div class="login-left-content">
-          <h1>Resource Manager</h1>
-          <p>Compute Resource Integration System</p>
+          <h1>资源管理器</h1>
+          <p>计算资源集成系统</p>
           <div class="login-features">
             <div class="feature-item">
               <span class="feature-icon">🚀</span>
-              <span>One-click Environment Deployment</span>
+              <span>一键环境部署</span>
             </div>
             <div class="feature-item">
               <span class="feature-icon">📊</span>
-              <span>Real-time Resource Monitoring</span>
+              <span>实时资源监控</span>
             </div>
             <div class="feature-item">
               <span class="feature-icon">🛡️</span>
-              <span>Secure Access Control</span>
+              <span>安全访问控制</span>
             </div>
           </div>
         </div>
       </div>
       <div class="login-right">
         <div class="login-form-container">
-          <h2 class="form-title">Welcome Back</h2>
-          <p class="form-subtitle">Please sign in to your account</p>
+          <h2 class="form-title">欢迎回来</h2>
+          <p class="form-subtitle">请登录您的账户</p>
           
           <a-form
             :model="formState"
@@ -36,9 +36,9 @@
             class="login-form"
           >
             <a-form-item
-              label="Username"
+              label="用户名"
               name="username"
-              :rules="[{ required: true, message: 'Please input your username!' }]"
+              :rules="[{ required: true, message: '请输入用户名！' }]"
             >
               <a-input v-model:value="formState.username" size="large" placeholder="admin">
                 <template #prefix>
@@ -48,9 +48,9 @@
             </a-form-item>
 
             <a-form-item
-              label="Password"
+              label="密码"
               name="password"
-              :rules="[{ required: true, message: 'Please input your password!' }]"
+              :rules="[{ required: true, message: '请输入密码！' }]"
             >
               <a-input-password v-model:value="formState.password" size="large" placeholder="password">
                 <template #prefix>
@@ -61,12 +61,12 @@
 
             <a-form-item>
               <a-button type="primary" html-type="submit" :loading="loading" block size="large" class="submit-btn">
-                Sign in
+                登录
               </a-button>
             </a-form-item>
 
             <div class="form-footer">
-              Don't have an account? <router-link to="/register">Sign up</router-link>
+              还没有账户？ <router-link to="/register">注册</router-link>
             </div>
           </a-form>
         </div>
@@ -95,10 +95,10 @@ const onFinish = async (values: any) => {
   const success = await authStore.login(values);
   loading.value = false;
   if (success) {
-    message.success('Login successful');
+    message.success('登录成功');
     router.push('/agents');
   } else {
-    message.error('Login failed');
+    message.error('登录失败');
   }
 };
 

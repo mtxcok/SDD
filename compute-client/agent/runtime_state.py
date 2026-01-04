@@ -11,7 +11,7 @@ class RuntimeState:
 
     def __init__(self, path: Path):
         self.path = path
-        self.agent_id: Optional[str] = None
+        self.agent_id: Optional[int] = None
         self.agent_token: Optional[str] = None
         self._load()
 

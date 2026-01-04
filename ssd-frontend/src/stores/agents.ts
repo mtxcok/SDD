@@ -19,7 +19,10 @@ export const useAgentsStore = defineStore('agents', () => {
 
       // Map allocations to agents
       agents.value = fetchedAgents.map(agent => {
-        const agentAllocations = fetchedAllocations.filter(a => a.agent_id === agent.id);
+        // Filter allocations that are NOT released
+        const agentAllocations = fetchedAllocations.filter(a => 
+            a.agent_id === agent.id && a.status !== 'released'
+        );
         return {
           ...agent,
           active_allocations: agentAllocations

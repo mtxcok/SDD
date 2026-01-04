@@ -110,8 +110,9 @@ class CodeServerManager:
     - 停止进程
     """
 
-    def __init__(self, cs_bind: str, proc_mgr: ProcManager, logger):
-        self.host, self.port = parse_bind(cs_bind)
+    def __init__(self, cfg, proc_mgr: ProcManager, logger):
+        self.cfg = cfg
+        self.host, self.port = parse_bind(cfg.cs_bind)
         self.pm = proc_mgr
         self.log = logger
         self.handle: Optional[ProcHandle] = None
@@ -122,7 +123,7 @@ class CodeServerManager:
             return self.handle
         env = {"PASSWORD": password}
         cmd = [
-            "code-server",
+            self.cfg.code_server_path,
             "--bind-addr",
             f"{self.host}:{self.port}",
             "--auth",
@@ -157,15 +158,15 @@ class FrpcManager:
     def _write_ini(self, remote_port: int, local_port: int):
         ini_path = self.pm.work_dir / "frpc.ini"
         ini_path.write_text(
-            f"[common]\\n"
-            f"server_addr = {self.cfg.frp_server_addr}\\n"
-            f"server_port = {self.cfg.frp_server_port}\\n"
-            f"token = {self.cfg.frp_token}\\n\\n"
-            f"[code_server_{remote_port}]\\n"
-            f"type = tcp\\n"
-            f"local_ip = 127.0.0.1\\n"
-            f"local_port = {local_port}\\n"
-            f"remote_port = {remote_port}\\n"
+            f"[common]\n"
+            f"server_addr = {self.cfg.frp_server_addr}\n"
+            f"server_port = {self.cfg.frp_server_port}\n"
+            f"token = {self.cfg.frp_token}\n\n"
+            f"[code_server_{remote_port}]\n"
+            f"type = tcp\n"
+            f"local_ip = 127.0.0.1\n"
+            f"local_port = {local_port}\n"
+            f"remote_port = {remote_port}\n"
         )
         return ini_path
 
@@ -174,7 +175,7 @@ class FrpcManager:
             self.log.info("frpc already running")
             return
         ini = self._write_ini(remote_port, local_port)
-        self.handle = self.pm.start(["frpc", "-c", str(ini)], name="frpc")
+        self.handle = self.pm.start([self.cfg.frpc_path, "-c", str(ini)], name="frpc")
 
     def stop(self):
         if self.handle:

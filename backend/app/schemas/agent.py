@@ -21,6 +21,10 @@ class AgentRegisterResponse(BaseModel):
     agent_id: int
     agent_token: str
 
+class AgentHeartbeatPayload(BaseModel):
+    cpu: Optional[float] = None
+    mem: Optional[float] = None
+
 class AgentHeartbeat(BaseModel):
     agent_id: int
     agent_token: str

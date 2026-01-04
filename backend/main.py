@@ -1,9 +1,27 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api.routers import auth, agents, allocations, tasks, misc
+from app.core.database import engine
+from app.models.base import Base
 
 app = FastAPI(title=settings.PROJECT_NAME)
+
+@app.on_event("startup")
+async def startup():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+# 配置 CORS
+# Ensure CORS is set up for frontend communication
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # 生产环境建议改为具体的域名列表
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 

@@ -1,16 +1,16 @@
 <template>
   <a-layout class="layout-container">
     <a-layout-header class="header">
-      <div class="logo">Resource Manager</div>
+      <div class="logo">资源管理器</div>
       <div class="header-right">
-        <a-button type="link" @click="logout" class="logout-btn">Logout</a-button>
+        <a-button type="link" @click="logout" class="logout-btn">退出登录</a-button>
       </div>
     </a-layout-header>
     <a-layout-content class="content">
       <div class="content-wrapper">
         <div class="page-header">
-          <h2>Agent Management</h2>
-          <a-button type="primary" @click="refreshAgents">Refresh List</a-button>
+          <h2>节点管理</h2>
+          <a-button type="primary" @click="refreshAgents">刷新列表</a-button>
         </div>
         
         <a-card :bordered="false" class="table-card">
@@ -25,12 +25,12 @@
               <template v-if="column.key === 'action'">
                 <a-space>
                   <a-popconfirm
-                    title="Are you sure start a new code-server session?"
-                    ok-text="Yes"
-                    cancel-text="No"
+                    title="确定要启动新的 code-server 会话吗？"
+                    ok-text="是"
+                    cancel-text="否"
                     @confirm="startSession(record.id)"
                   >
-                    <a-button type="primary" size="small">Start Session</a-button>
+                    <a-button type="primary" size="small">启动会话</a-button>
                   </a-popconfirm>
                 </a-space>
               </template>
@@ -39,7 +39,7 @@
             <!-- Expanded Row for Allocations -->
             <template #expandedRowRender="{ record }">
               <div class="expanded-row" v-if="record.active_allocations && record.active_allocations.length > 0">
-                  <h4>Active Sessions for {{ record.name }}</h4>
+                  <h4>{{ record.name }} 的活跃会话</h4>
                   <a-table 
                       :dataSource="record.active_allocations" 
                       :columns="allocationColumns" 
@@ -56,18 +56,21 @@
                           </template>
                           <template v-if="column.key === 'access_url'">
                               <a :href="allocation.access_url" target="_blank" v-if="allocation.access_url">{{ allocation.access_url }}</a>
-                              <span v-else class="text-muted">Waiting for URL...</span>
+                              <span v-else-if="allocation.status === 'active' && allocation.remote_port">
+                                  <a :href="`http://127.0.0.1:${allocation.remote_port}`" target="_blank">http://127.0.0.1:{{ allocation.remote_port }}</a>
+                              </span>
+                              <span v-else class="text-muted">等待 URL...</span>
                           </template>
                           <template v-if="column.key === 'action'">
                               <a-space>
-                                  <a-button size="small" v-if="allocation.access_url" @click="copyLink(allocation.access_url)">Copy</a-button>
+                                  <a-button size="small" v-if="allocation.access_url" @click="copyLink(allocation.access_url)">复制</a-button>
                                   <a-popconfirm
-                                    title="Stop this session?"
-                                    ok-text="Yes"
-                                    cancel-text="No"
+                                    title="停止此会话？"
+                                    ok-text="是"
+                                    cancel-text="否"
                                     @confirm="stopSession(allocation.id)"
                                   >
-                                    <a-button danger size="small">Stop</a-button>
+                                    <a-button danger size="small">停止</a-button>
                                   </a-popconfirm>
                               </a-space>
                           </template>
@@ -75,7 +78,7 @@
                   </a-table>
               </div>
               <div v-else class="expanded-row">
-                  <p>No active sessions.</p>
+                  <p>无活跃会话。</p>
               </div>
             </template>
           </a-table>
@@ -99,20 +102,20 @@ const allocationsStore = useAllocationsStore();
 const authStore = useAuthStore();
 
 const columns = [
-  { title: 'Name', dataIndex: 'name', key: 'name' },
-  { title: 'Status', dataIndex: 'status', key: 'status' },
-  { title: 'IP Address', dataIndex: 'ip', key: 'ip' },
-  { title: 'Last Seen', dataIndex: 'last_seen_at', key: 'last_seen_at' },
-  { title: 'Active Sessions', key: 'active_allocations' },
-  { title: 'Action', key: 'action' },
+  { title: '名称', dataIndex: 'name', key: 'name' },
+  { title: '状态', dataIndex: 'status', key: 'status' },
+  { title: 'IP 地址', dataIndex: 'ip', key: 'ip' },
+  { title: '最后在线', dataIndex: 'last_seen_at', key: 'last_seen_at' },
+  { title: '活跃会话', key: 'active_allocations' },
+  { title: '操作', key: 'action' },
 ];
 
 const allocationColumns = [
     { title: 'ID', dataIndex: 'id', key: 'id' },
-    { title: 'Status', dataIndex: 'status', key: 'status' },
-    { title: 'Port', dataIndex: 'remote_port', key: 'remote_port' },
-    { title: 'Access Link', key: 'access_url' },
-    { title: 'Action', key: 'action', width: '150px' },
+    { title: '状态', dataIndex: 'status', key: 'status' },
+    { title: '端口', dataIndex: 'remote_port', key: 'remote_port' },
+    { title: '访问链接', key: 'access_url' },
+    { title: '操作', key: 'action', width: '150px' },
 ];
 
 const refreshAgents = () => {
@@ -131,27 +134,27 @@ const logout = () => {
 }
 
 const startSession = async (agentId: number) => {
-  message.loading({ content: 'Starting session...', key: 'startSession' });
+  message.loading({ content: '正在启动会话...', key: 'startSession' });
   const success = await allocationsStore.createAllocation(agentId);
   if (success) {
-    message.success({ content: 'Session started!', key: 'startSession' });
+    message.success({ content: '会话已启动！', key: 'startSession' });
   } else {
-    message.error({ content: 'Failed to start session', key: 'startSession' });
+    message.error({ content: '启动会话失败', key: 'startSession' });
   }
 };
 
 const stopSession = async (allocationId: number) => {
     const success = await allocationsStore.releaseAllocation(allocationId);
     if (success) {
-        message.success('Session stopping...');
+        message.success('正在停止会话...');
     } else {
-        message.error('Failed to stop session');
+        message.error('停止会话失败');
     }
 }
 
 const copyLink = (url: string) => {
     navigator.clipboard.writeText(url).then(() => {
-        message.success('Link copied to clipboard');
+        message.success('链接已复制到剪贴板');
     });
 }
 
