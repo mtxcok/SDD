@@ -56,6 +56,9 @@
                           </template>
                           <template v-if="column.key === 'access_url'">
                               <a :href="allocation.access_url" target="_blank" v-if="allocation.access_url">{{ allocation.access_url }}</a>
+                              <span v-else-if="allocation.status === 'active' && allocation.remote_port">
+                                  <a :href="`http://127.0.0.1:${allocation.remote_port}`" target="_blank">http://127.0.0.1:{{ allocation.remote_port }}</a>
+                              </span>
                               <span v-else class="text-muted">Waiting for URL...</span>
                           </template>
                           <template v-if="column.key === 'action'">

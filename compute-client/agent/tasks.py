@@ -52,10 +52,10 @@ class TaskRunner:
         # start frpc
         self.frp_mgr.start(remote_port=remote_port, local_port=local_port)
         self.log.info("Task %s done: code-server(pid=%s) -> remote %s", tid, cs_handle.popen.pid, remote_port)
-        self.api.report_task(tid, "success", f"remote_port={remote_port}")
+        self.api.report_task(tid, "done", f"remote_port={remote_port}")
 
     def _handle_stop(self, tid: str):
         self.frp_mgr.stop()
         self.code_mgr.stop()
         self.log.info("Task %s done: stopped code-server + frpc", tid)
-        self.api.report_task(tid, "success", "stopped")
+        self.api.report_task(tid, "done", "stopped")

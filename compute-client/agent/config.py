@@ -17,6 +17,9 @@ class Config(BaseModel):
   poll_interval_sec: int = Field(default=5, alias="POLL_INTERVAL_SEC")
   log_level: str = Field(default="INFO", alias="LOG_LEVEL")
   work_dir: Path = Field(default=Path("./runtime"), alias="WORK_DIR")
+  code_server_path: str = Field(default="code-server", alias="CODE_SERVER_PATH")
+  frpc_path: str = Field(default="frpc", alias="FRPC_PATH")
+
   @classmethod
   def load(cls, env_file: str = "work.env") -> "Config":
     load_dotenv(env_file, override=False)

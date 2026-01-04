@@ -6,7 +6,7 @@ from pathlib import Path
 
 
 class RegisterResp(BaseModel):
-    agent_id: str
+    agent_id: int
     agent_token: str
 
 
@@ -91,5 +91,6 @@ class API:
     # ------------------------ new: report ------------------------
     def report_task(self, task_id: str, status: str, message: str | None = None):
         payload = {"status": status, "message": message}
-        resp = self._request("POST", f"/agents/tasks/{task_id}/report", json=payload)
+        # Backend mounts tasks router at /tasks, not /agents/tasks
+        resp = self._request("POST", f"/tasks/{task_id}/report", json=payload)
         return resp.json()

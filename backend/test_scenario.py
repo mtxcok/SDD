@@ -72,12 +72,12 @@ def run_test():
 
     # 5. Agent 心跳上报
     log("5. 发送心跳...")
+    # Backend expects Bearer token in header, and cpu/mem in body
+    agent_headers = {"Authorization": f"Bearer {agent_token}"}
     resp = requests.post(f"{BASE_URL}/agents/heartbeat", json={
-        "agent_id": agent_id,
-        "agent_token": agent_token,
         "cpu": 10.5,
         "mem": 20.0
-    })
+    }, headers=agent_headers)
     if resp.status_code != 200:
         print(f"❌ 心跳失败: {resp.text}")
         return
@@ -99,11 +99,12 @@ def run_test():
 
     # 7. Agent 轮询任务
     log("7. Agent 轮询任务...")
-    resp = requests.post(f"{BASE_URL}/agents/poll", json={
-        "agent_id": agent_id,
-        "agent_token": agent_token
-    })
-    tasks = resp.json()["tasks"]
+    # Backend expects GET /agents/tasks with Bearer token
+    resp = requests.get(f"{BASE_URL}/agents/tasks", headers=agent_headers)
+    if resp.status_code != 200:
+        print(f"❌ 轮询失败: {resp.text}")
+        return
+    tasks = resp.json()
     log(f"✅ 轮询成功，获取到 {len(tasks)} 个任务")
     
     target_task = None
@@ -121,10 +122,11 @@ def run_test():
 
     # 8. Agent 上报任务完成
     log("8. Agent 上报任务完成...")
+    # Backend expects POST /tasks/{id}/report
     resp = requests.post(f"{BASE_URL}/tasks/{target_task['id']}/report", json={
         "status": "done",
         "message": "Started successfully"
-    })
+    }, headers=agent_headers)
     if resp.status_code != 200:
         print(f"❌ 上报任务失败: {resp.text}")
         return
@@ -141,10 +143,83 @@ def run_test():
     else:
         status = my_alloc['status'] if my_alloc else 'Not Found'
         print(f"❌ 状态验证失败. 期望: active, 实际: {status}")
+        return
+
+    # 10. 释放资源
+    log("10. 释放资源...")
+    resp = requests.post(f"{BASE_URL}/allocations/{alloc_id}/release", headers=headers)
+    if resp.status_code != 200:
+        print(f"❌ 释放请求失败: {resp.text}")
+        return
+    log("✅ 释放请求已提交")
+
+    # 11. Agent 轮询释放任务
+    log("11. Agent 轮询释放任务...")
+    # Give it a moment for the task to be created
+    time.sleep(1)
+    resp = requests.get(f"{BASE_URL}/agents/tasks", headers=agent_headers)
+    tasks = resp.json()
+    
+    stop_task = None
+    for t in tasks:
+        if t["type"] == "stop_code_server" and t["payload"]["allocation_id"] == alloc_id:
+            stop_task = t
+            break
+            
+    if not stop_task:
+        print("❌ 未找到预期的 stop_code_server 任务")
+        return
+    log(f"✅ 找到释放任务: {stop_task['type']} (ID: {stop_task['id']})")
+
+    # 12. Agent 上报释放完成
+    log("12. Agent 上报释放完成...")
+    resp = requests.post(f"{BASE_URL}/tasks/{stop_task['id']}/report", json={
+        "status": "done",
+        "message": "Stopped successfully"
+    }, headers=agent_headers)
+    if resp.status_code != 200:
+        print(f"❌ 上报释放任务失败: {resp.text}")
+        return
+    
+    # 13. 验证最终释放状态
+    log("13. 验证最终释放状态...")
+    resp = requests.get(f"{BASE_URL}/allocations/?agent_id={agent_id}", headers=headers)
+    allocs = resp.json()
+    my_alloc = next((a for a in allocs if a["id"] == alloc_id), None)
+    
+    if my_alloc and my_alloc["status"] == "released":
+        log(f"✅ 验证成功! Allocation 状态为 RELEASED.")
+    else:
+        status = my_alloc['status'] if my_alloc else 'Not Found'
+        print(f"❌ 状态验证失败. 期望: released, 实际: {status}")
+        return
 
     print("-" * 50)
     print("🎉 测试流程全部通过!")
     print("-" * 50)
+    
+    # Generate work.env for compute-client
+    print("\n[INFO] Generating compute-client/work.env...")
+    env_content = f"""API_BASE_URL={BASE_URL}
+AGENT_NAME={agent_name}
+AGENT_SECRET={secret}
+FRP_SERVER_ADDR=127.0.0.1
+FRP_SERVER_PORT=7000
+FRP_TOKEN=token
+CS_BIND=127.0.0.1:8080
+HEARTBEAT_INTERVAL_SEC=10
+POLL_INTERVAL_SEC=5
+LOG_LEVEL=INFO
+WORK_DIR=./runtime
+"""
+    try:
+        with open("d:\\SDD\\compute-client\\work.env", "w", encoding="utf-8") as f:
+            f.write(env_content)
+        print("✅ compute-client/work.env generated successfully.")
+        print(f"   Agent Name: {agent_name}")
+        print(f"   Agent Secret: {secret}")
+    except Exception as e:
+        print(f"❌ Failed to generate work.env: {e}")
 
 if __name__ == "__main__":
     run_test()

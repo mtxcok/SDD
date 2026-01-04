@@ -42,7 +42,7 @@ def main():
 
     # managers
     proc_mgr = ProcManager(cfg.work_dir, log)
-    code_mgr = CodeServerManager(cfg.cs_bind, proc_mgr, log)
+    code_mgr = CodeServerManager(cfg, proc_mgr, log)
     frp_mgr = FrpcManager(cfg, proc_mgr, log)
     runner = TaskRunner(cfg, api, proc_mgr, code_mgr, frp_mgr)
 
@@ -80,8 +80,10 @@ def _safe_heartbeat(api: API, log, cpu: float, mem: float, code_mgr=None):
         log.warning("heartbeat send failed: %s", e)
 
     # 2) 额外健康检查：code-server
-    if code_mgr and not code_mgr.healthy():
-        log.warning("code-server unhealthy, restarting...")
+    # 只有当 code-server 处于“应该运行”的状态（即 handle 不为空）时，才进行健康检查
+    # 避免 Agent 刚启动（或被显式停止后）就自动重启它
+    if code_mgr and code_mgr.handle and not code_mgr.healthy():
+        log.warning("code-server unhealthy (crashed?), restarting...")
         try:
             code_mgr.stop()
             code_mgr.start(password="auto")

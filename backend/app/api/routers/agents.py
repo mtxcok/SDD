@@ -5,12 +5,14 @@ from app.core.database import get_db
 from app.services.agent_service import AgentService
 from app.schemas.agent import (
     Agent, AgentCreateInvite, AgentInviteResponse, 
-    AgentRegister, AgentRegisterResponse, AgentHeartbeat, AgentPoll
+    AgentRegister, AgentRegisterResponse, AgentHeartbeat, AgentPoll, AgentHeartbeatPayload
 )
 from app.schemas.task import TaskResponse
 from app.schemas.common import OkResponse
 from app.api.deps import get_current_user
+from app.api.deps_agent import get_current_agent
 from app.models.user import User
+from app.models.agent import Agent as AgentModel
 
 router = APIRouter()
 
@@ -54,32 +56,20 @@ async def register_agent(
 
 @router.post("/heartbeat", response_model=OkResponse)
 async def heartbeat(
-    heartbeat_in: AgentHeartbeat,
+    heartbeat_in: AgentHeartbeatPayload,
     request: Request,
+    agent: Annotated[AgentModel, Depends(get_current_agent)],
     session: Annotated[AsyncSession, Depends(get_db)]
 ):
     service = AgentService(session)
-    agent = await service.authenticate_agent(heartbeat_in.agent_id, heartbeat_in.agent_token)
-    if not agent:
-        raise HTTPException(status_code=401, detail="Invalid agent credentials")
-    
     await service.heartbeat(agent, ip=request.client.host)
     return OkResponse()
 
-@router.post("/poll", response_model=dict)
+@router.get("/tasks", response_model=List[TaskResponse])
 async def poll_tasks(
-    poll_in: AgentPoll,
+    agent: Annotated[AgentModel, Depends(get_current_agent)],
     session: Annotated[AsyncSession, Depends(get_db)]
 ):
     service = AgentService(session)
-    agent = await service.authenticate_agent(poll_in.agent_id, poll_in.agent_token)
-    if not agent:
-        raise HTTPException(status_code=401, detail="Invalid agent credentials")
-    
     tasks = await service.get_tasks(agent.id)
-    # Convert SQLAlchemy models to Pydantic models or dicts manually if needed, 
-    # but since response_model is dict, we can just return a list of dicts
-    # However, tasks is a list of Task objects.
-    # Let's use TaskResponse schema to serialize
-    from app.schemas.task import TaskResponse
-    return {"tasks": [TaskResponse.model_validate(t) for t in tasks]}
+    return [TaskResponse.model_validate(t) for t in tasks]
