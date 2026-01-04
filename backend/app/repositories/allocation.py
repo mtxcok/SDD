@@ -1,6 +1,6 @@
 from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from app.models.allocation import Allocation
 from app.models.enums import AllocationStatus
 from app.repositories.base import BaseRepository
@@ -8,6 +8,10 @@ from app.repositories.base import BaseRepository
 class AllocationRepository(BaseRepository[Allocation]):
     def __init__(self, session: AsyncSession):
         super().__init__(Allocation, session)
+
+    async def delete_by_agent(self, agent_id: int):
+        await self.session.execute(delete(Allocation).where(Allocation.agent_id == agent_id))
+        await self.session.commit()
 
     async def get_active_ports(self) -> List[int]:
         result = await self.session.execute(

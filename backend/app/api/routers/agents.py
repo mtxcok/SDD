@@ -39,6 +39,18 @@ async def create_invite(
     secret = await service.create_invite(invite_in)
     return AgentInviteResponse(name=invite_in.name, secret=secret)
 
+@router.delete("/{agent_id}", response_model=OkResponse)
+async def delete_agent(
+    agent_id: int,
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_db)]
+):
+    service = AgentService(session)
+    success = await service.delete_agent(agent_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    return OkResponse()
+
 # Agent Side Endpoints
 
 @router.post("/register", response_model=AgentRegisterResponse)
@@ -62,7 +74,7 @@ async def heartbeat(
     session: Annotated[AsyncSession, Depends(get_db)]
 ):
     service = AgentService(session)
-    await service.heartbeat(agent, ip=request.client.host)
+    await service.heartbeat(agent, ip=request.client.host, cpu=heartbeat_in.cpu, mem=heartbeat_in.mem)
     return OkResponse()
 
 @router.get("/tasks", response_model=List[TaskResponse])

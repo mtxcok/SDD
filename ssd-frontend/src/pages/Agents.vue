@@ -19,6 +19,12 @@
               <template v-if="column.key === 'status'">
                 <a-badge :status="record.status === 'online' ? 'success' : 'default'" :text="record.status.toUpperCase()" />
               </template>
+              <template v-if="column.key === 'cpu'">
+                {{ record.cpu != null ? record.cpu.toFixed(1) + '%' : '-' }}
+              </template>
+              <template v-if="column.key === 'mem'">
+                {{ record.mem != null ? record.mem.toFixed(1) + '%' : '-' }}
+              </template>
               <template v-if="column.key === 'active_allocations'">
                 {{ record.active_allocations?.length || 0 }}
               </template>
@@ -31,6 +37,14 @@
                     @confirm="startSession(record.id)"
                   >
                     <a-button type="primary" size="small">启动会话</a-button>
+                  </a-popconfirm>
+                  <a-popconfirm
+                    title="确定要删除此节点吗？"
+                    ok-text="是"
+                    cancel-text="否"
+                    @confirm="deleteAgent(record.id)"
+                  >
+                    <a-button danger size="small">删除</a-button>
                   </a-popconfirm>
                 </a-space>
               </template>
@@ -105,6 +119,8 @@ const columns = [
   { title: '名称', dataIndex: 'name', key: 'name' },
   { title: '状态', dataIndex: 'status', key: 'status' },
   { title: 'IP 地址', dataIndex: 'ip', key: 'ip' },
+  { title: 'CPU', key: 'cpu' },
+  { title: '内存', key: 'mem' },
   { title: '最后在线', dataIndex: 'last_seen_at', key: 'last_seen_at' },
   { title: '活跃会话', key: 'active_allocations' },
   { title: '操作', key: 'action' },
@@ -140,6 +156,15 @@ const startSession = async (agentId: number) => {
     message.success({ content: '会话已启动！', key: 'startSession' });
   } else {
     message.error({ content: '启动会话失败', key: 'startSession' });
+  }
+};
+
+const deleteAgent = async (agentId: number) => {
+  const success = await agentsStore.deleteAgent(agentId);
+  if (success) {
+    message.success('节点已删除');
+  } else {
+    message.error('删除节点失败');
   }
 };
 

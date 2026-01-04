@@ -2,6 +2,7 @@ import secrets
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.repositories.agent import AgentRepository
 from app.repositories.task import TaskRepository
+from app.repositories.allocation import AllocationRepository
 from app.schemas.agent import AgentCreateInvite, AgentRegister
 from app.core.security import get_password_hash, verify_password
 from app.models.agent import Agent
@@ -12,6 +13,7 @@ class AgentService:
     def __init__(self, session: AsyncSession):
         self.agent_repo = AgentRepository(session)
         self.task_repo = TaskRepository(session)
+        self.allocation_repo = AllocationRepository(session)
 
     async def create_invite(self, invite_in: AgentCreateInvite) -> str:
         # Generate a random secret
@@ -60,12 +62,30 @@ class AgentService:
             
         return agent
 
-    async def heartbeat(self, agent: Agent, ip: str = None):
-        await self.agent_repo.update(agent, {
+    async def heartbeat(self, agent: Agent, ip: str = None, cpu: float = None, mem: float = None):
+        update_data = {
             "last_seen_at": datetime.utcnow(),
             "status": AgentStatus.ONLINE,
             "ip": ip
-        })
+        }
+        if cpu is not None:
+            update_data["cpu"] = cpu
+        if mem is not None:
+            update_data["mem"] = mem
+            
+        await self.agent_repo.update(agent, update_data)
 
     async def get_tasks(self, agent_id: int):
         return await self.task_repo.get_pending_tasks(agent_id)
+
+    async def delete_agent(self, agent_id: int) -> bool:
+        agent = await self.agent_repo.get(agent_id)
+        if not agent:
+            return False
+        
+        # Delete related records first
+        await self.task_repo.delete_by_agent(agent_id)
+        await self.allocation_repo.delete_by_agent(agent_id)
+        
+        await self.agent_repo.delete(agent_id)
+        return True
